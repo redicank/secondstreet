@@ -1,0 +1,396 @@
+<div id="kiosk-root" style="width:100%;max-width:480px;margin:0 auto;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;font-family:var(--font-sans);">
+
+<div style="padding:14px 16px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;justify-content:space-between;align-items:flex-end;">
+  <div>
+    <h2 style="font-size:18px;font-weight:500;margin:0 0 2px 0;">2nd Street through time</h2>
+    <p style="font-size:12px;color:var(--color-text-secondary);margin:0;">Jackson Ward, Richmond</p>
+  </div>
+  <span id="idle-indicator" style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">kiosk preview</span>
+</div>
+
+<div id="map-canvas" style="position:relative;width:100%;height:380px;background:var(--color-background-tertiary);overflow:hidden;">
+  <svg id="era-map" viewBox="0 0 480 380" preserveAspectRatio="xMidYMid slice" style="width:100%;height:100%;display:block;">
+    <defs>
+      <pattern id="grid2" width="40" height="40" patternUnits="userSpaceOnUse">
+        <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgba(120,120,120,0.08)" stroke-width="0.5"/>
+      </pattern>
+    </defs>
+    <rect width="480" height="380" fill="url(#grid2)"/>
+
+    <g id="era-tint"><rect width="480" height="380" fill="#d8c9a8" opacity="0.25"/></g>
+
+    <g stroke="rgba(80,80,80,0.35)" stroke-width="1" fill="none">
+      <line x1="0" y1="80" x2="480" y2="80"/>
+      <line x1="0" y1="170" x2="480" y2="170"/>
+      <line x1="0" y1="260" x2="480" y2="260"/>
+      <line x1="0" y1="340" x2="480" y2="340"/>
+    </g>
+
+    <g>
+      <rect x="220" y="0" width="44" height="380" fill="rgba(60,60,60,0.18)"/>
+      <text x="242" y="370" text-anchor="middle" font-size="11" fill="rgba(40,40,40,0.6)" style="font-family:var(--font-sans);">2nd Street</text>
+    </g>
+
+    <g font-size="10" fill="rgba(40,40,40,0.55)" style="font-family:var(--font-sans);">
+      <text x="10" y="76">Marshall St</text>
+      <text x="10" y="166">Clay St</text>
+      <text x="10" y="256">Leigh St</text>
+      <text x="10" y="336">Duval St</text>
+    </g>
+
+    <g id="photo-cones"></g>
+    <g id="footprints"></g>
+    <g id="markers"></g>
+    <g id="photo-markers"></g>
+  </svg>
+
+  <div style="position:absolute;top:10px;left:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:6px 10px;font-size:12px;">
+    <span style="color:var(--color-text-secondary);">Era:</span>
+    <span id="era-label-pill" style="font-weight:500;margin-left:4px;">1885 – 1900</span>
+  </div>
+
+  <button id="photo-toggle" style="position:absolute;top:10px;right:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:8px 12px;font-size:12px;cursor:pointer;font-family:var(--font-sans);display:flex;align-items:center;gap:6px;">
+    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="6" width="18" height="14" rx="2"/><circle cx="12" cy="13" r="3.5"/><path d="M8 6l1.5-2.5h5L16 6"/></svg>
+    <span id="photo-toggle-label">Photos on</span>
+  </button>
+</div>
+
+<div id="content-area" style="padding:16px;min-height:240px;">
+  <div id="era-info">
+    <p style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;">Era overview</p>
+    <h3 id="era-title" style="font-size:17px;font-weight:500;margin:0 0 8px 0;">Reconstruction & rise</h3>
+    <p id="era-blurb" style="font-size:14px;line-height:1.6;color:var(--color-text-secondary);margin:0 0 16px 0;"></p>
+    <p style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px 0;">Tap a marker to learn more</p>
+    <div id="poi-list" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;"></div>
+  </div>
+
+  <div id="poi-detail" style="display:none;">
+    <button id="back-btn" style="background:transparent;border:0.5px solid var(--color-border-tertiary);padding:8px 14px;font-size:13px;color:var(--color-text-info);cursor:pointer;margin-bottom:14px;border-radius:var(--border-radius-md);font-family:var(--font-sans);min-height:36px;">← Back</button>
+    <p id="poi-era" style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;">1885 – 1900</p>
+    <h3 id="poi-name" style="font-size:18px;font-weight:500;margin:0 0 4px 0;">The Hippodrome</h3>
+    <p id="poi-address" style="font-size:13px;color:var(--color-text-secondary);margin:0 0 12px 0;">528 N 2nd St</p>
+    <div id="poi-image" style="width:100%;aspect-ratio:4/3;background:var(--color-background-secondary);border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-text-tertiary);margin-bottom:12px;">historic photo placeholder</div>
+    <p id="poi-short" style="font-size:14px;line-height:1.6;color:var(--color-text-primary);margin:0 0 12px 0;font-weight:500;"></p>
+    <p id="poi-long" style="font-size:14px;line-height:1.7;color:var(--color-text-secondary);margin:0 0 12px 0;"></p>
+    <p id="poi-sources" style="font-size:11px;line-height:1.5;color:var(--color-text-tertiary);margin:0;border-top:0.5px solid var(--color-border-tertiary);padding-top:10px;"></p>
+  </div>
+
+  <div id="photo-detail" style="display:none;">
+    <button id="photo-back-btn" style="background:transparent;border:0.5px solid var(--color-border-tertiary);padding:8px 14px;font-size:13px;color:var(--color-text-info);cursor:pointer;margin-bottom:14px;border-radius:var(--border-radius-md);font-family:var(--font-sans);min-height:36px;">← Back</button>
+    <p id="photo-era" style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;">1925 – 1950</p>
+    <h3 id="photo-caption-title" style="font-size:16px;font-weight:500;margin:0 0 4px 0;">Street scene, 2nd & Clay</h3>
+    <p id="photo-meta" style="font-size:12px;color:var(--color-text-secondary);margin:0 0 12px 0;">1938 · looking north</p>
+    <div style="width:100%;aspect-ratio:4/3;background:var(--color-background-secondary);border-radius:var(--border-radius-md);display:flex;align-items:center;justify-content:center;font-size:11px;color:var(--color-text-tertiary);margin-bottom:12px;">historic photo placeholder</div>
+    <p id="photo-caption" style="font-size:13px;line-height:1.6;color:var(--color-text-primary);margin:0 0 12px 0;"></p>
+    <p id="photo-source" style="font-size:11px;line-height:1.5;color:var(--color-text-tertiary);margin:0;border-top:0.5px solid var(--color-border-tertiary);padding-top:10px;"></p>
+  </div>
+</div>
+
+<div style="padding:12px 16px;border-top:0.5px solid var(--color-border-tertiary);background:var(--color-background-secondary);">
+  <p style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 8px 0;">Choose an era</p>
+  <div id="era-buttons" style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;"></div>
+</div>
+
+</div>
+
+<script>
+(function(){
+  const eras = [
+    { idx:0, label:"1885 – 1900", title:"Reconstruction & rise",
+      blurb:"In the decades after emancipation, 2nd Street emerged as the commercial spine of a thriving Black community.",
+      tint:"#d8c9a8", tintOpacity:0.30 },
+    { idx:1, label:"1900 – 1925", title:"Black Wall Street",
+      blurb:"The peak of 2nd Street as a Black commercial and cultural center. Maggie Walker's bank, the True Reformer Hall, and a flourishing entertainment district drew visitors from across the South.",
+      tint:"#c9b890", tintOpacity:0.32 },
+    { idx:2, label:"1925 – 1950", title:"Harlem of the South",
+      blurb:"The Hippodrome and other venues hosted Duke Ellington, Cab Calloway, and Bill \"Bojangles\" Robinson. Despite Jim Crow, 2nd Street thrived as a center of Black art, business, and nightlife.",
+      tint:"#b8a578", tintOpacity:0.34 },
+    { idx:3, label:"1950 – 1970", title:"Disruption",
+      blurb:"Construction of Interstate 95 (completed 1958) cut directly through Jackson Ward, displacing residents and severing the historic street grid.",
+      tint:"#8a7855", tintOpacity:0.36 },
+    { idx:4, label:"1970 – 2000", title:"Decline & disinvestment",
+      blurb:"Many historic buildings were demolished or fell into disrepair. The corridor lost its commercial anchor, though community institutions maintained the neighborhood's cultural memory.",
+      tint:"#6b5e48", tintOpacity:0.30 },
+    { idx:5, label:"2000 – Today", title:"Renewal & remembrance",
+      blurb:"Historic preservation efforts, a restored Hippodrome (2011), and new investment have changed the corridor again. Tensions around gentrification and historical memory shape contemporary 2nd Street.",
+      tint:"#9bb89b", tintOpacity:0.28 }
+  ];
+
+  const pois = [
+    { id:"hippodrome", eras:[1,2,3,5], x:280, y:110, name:"The Hippodrome",
+      address:"528 N 2nd St", category:"theater",
+      short:"Premier Black entertainment venue from 1914, hosting jazz legends throughout the early 20th century.",
+      long:"Opened in 1914, the Hippodrome Theater became the cultural heart of 2nd Street's entertainment district. Through the 1920s and 30s, it hosted Duke Ellington, Cab Calloway, Ella Fitzgerald, and Bill \"Bojangles\" Robinson. The theater closed in 1985 after years of decline, but was restored and reopened in 2011 as a live entertainment venue. [PLACEHOLDER]",
+      sources:"Sources: Valentine Museum photo archive; Richmond Times-Dispatch (1925, 1937); Brown, J. (2001)." },
+    { id:"st_luke_bank", eras:[1,2], x:200, y:155, name:"St. Luke Penny Savings Bank",
+      address:"112 E Marshall St", category:"bank",
+      short:"Founded by Maggie Walker in 1903 — the first U.S. bank chartered by a Black woman.",
+      long:"Maggie Lena Walker chartered the St. Luke Penny Savings Bank in 1903, becoming the first African American woman to charter and serve as president of a bank in the United States. [PLACEHOLDER]",
+      sources:"Sources: National Park Service; Library of Virginia." },
+    { id:"true_reformer", eras:[0,1], x:280, y:200, name:"True Reformer Hall",
+      address:"604 N 2nd St", category:"institution",
+      short:"Headquarters of one of the most important Black mutual aid societies of the era.",
+      long:"Built in 1903, the True Reformer Hall housed offices, a bank, meeting spaces, and ceremonial halls for the Grand Fountain United Order of True Reformers. [PLACEHOLDER]",
+      sources:"Sources: Sanborn Fire Insurance Maps 1905; HJWA oral histories." },
+    { id:"eggleston_hotel", eras:[2,3], x:280, y:240, name:"Eggleston Hotel",
+      address:"604 N 2nd St", category:"hotel",
+      short:"Listed in the Green Book — accommodated Black travelers during segregation.",
+      long:"The Eggleston Hotel served Black travelers and performers during segregation, including many entertainers who performed at the Hippodrome. [PLACEHOLDER]",
+      sources:"Sources: Negro Motorist Green Book (1937, 1947, 1955); Valentine Museum." },
+    { id:"i95_corridor", eras:[3,4,5], x:240, y:60, name:"I-95 Construction",
+      address:"100-300 blocks", category:"infrastructure",
+      short:"Completed 1958. Demolished hundreds of homes, severing Jackson Ward's grid.",
+      long:"The construction of Interstate 95 through Jackson Ward in the 1950s displaced an estimated 1,000 households and demolished blocks of historic structures. [PLACEHOLDER]",
+      sources:"Sources: VDOT records; Silver, C. (1984)." }
+  ];
+
+  const photos = [
+    { id:"p1", eras:[2], x:160, y:130, name:"Street scene, 2nd & Marshall",
+      date:"1938", direction:"N", angle:0,
+      caption:"A Saturday afternoon on 2nd Street, looking north toward the Hippodrome marquee. [PLACEHOLDER caption written by students from archival research.]",
+      source:"Source: Valentine Museum, Cook Collection." },
+    { id:"p2", eras:[1,2], x:320, y:175, name:"True Reformer Hall facade",
+      date:"1908", direction:"E", angle:90,
+      caption:"Front view of the True Reformer Hall shortly after its completion. [PLACEHOLDER]",
+      source:"Source: Library of Virginia, Visual Studies Collection." },
+    { id:"p3", eras:[3], x:200, y:60, name:"Construction of I-95",
+      date:"1956", direction:"S", angle:180,
+      caption:"Demolition of homes along the future I-95 corridor, looking south. [PLACEHOLDER]",
+      source:"Source: Richmond Times-Dispatch archive." },
+    { id:"p4", eras:[3,4], x:340, y:280, name:"Boarded storefronts",
+      date:"1972", direction:"W", angle:270,
+      caption:"Vacant commercial buildings along 2nd Street, looking west. [PLACEHOLDER]",
+      source:"Source: Valentine Museum." },
+    { id:"p5", eras:[5], x:280, y:300, name:"Restored Hippodrome reopening",
+      date:"2011", direction:"N", angle:0,
+      caption:"Crowds gather for the reopening of the restored Hippodrome Theater. [PLACEHOLDER]",
+      source:"Source: Style Weekly archive." }
+  ];
+
+  let currentEra = 0;
+  let photosVisible = true;
+  let idleTimer = null;
+
+  const slider = null;
+  const eraButtons = document.getElementById("era-buttons");
+  const eraLabelPill = document.getElementById("era-label-pill");
+  const eraTitle = document.getElementById("era-title");
+  const eraBlurb = document.getElementById("era-blurb");
+  const eraTint = document.getElementById("era-tint");
+  const markersG = document.getElementById("markers");
+  const photoMarkersG = document.getElementById("photo-markers");
+  const photoConesG = document.getElementById("photo-cones");
+  const footprintsG = document.getElementById("footprints");
+  const poiList = document.getElementById("poi-list");
+  const eraInfo = document.getElementById("era-info");
+  const poiDetail = document.getElementById("poi-detail");
+  const photoDetail = document.getElementById("photo-detail");
+  const backBtn = document.getElementById("back-btn");
+  const photoBackBtn = document.getElementById("photo-back-btn");
+  const photoToggle = document.getElementById("photo-toggle");
+  const photoToggleLabel = document.getElementById("photo-toggle-label");
+
+  eras.forEach(e=>{
+    const b = document.createElement("button");
+    b.textContent = e.label;
+    b.dataset.era = e.idx;
+    b.style.cssText = "padding:12px 6px;font-size:12px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer;color:var(--color-text-secondary);font-family:var(--font-sans);min-height:44px;";
+    b.addEventListener("click", ()=>{ resetIdle(); setEra(e.idx); });
+    eraButtons.appendChild(b);
+  });
+
+  function setEra(idx){
+    currentEra = idx;
+    const e = eras[idx];
+    eraLabelPill.textContent = e.label;
+    eraTitle.textContent = e.title;
+    eraBlurb.textContent = e.blurb;
+    eraTint.innerHTML = `<rect width="480" height="380" fill="${e.tint}" opacity="${e.tintOpacity}"/>`;
+
+    Array.from(eraButtons.children).forEach((btn,i)=>{
+      if(i===idx){
+        btn.style.background = "var(--color-background-info)";
+        btn.style.color = "var(--color-text-info)";
+        btn.style.borderColor = "var(--color-border-info)";
+        btn.style.fontWeight = "500";
+      } else {
+        btn.style.background = "var(--color-background-primary)";
+        btn.style.color = "var(--color-text-secondary)";
+        btn.style.borderColor = "var(--color-border-tertiary)";
+        btn.style.fontWeight = "400";
+      }
+    });
+
+    renderMarkers();
+    renderPhotoMarkers();
+    renderPOIList();
+    showEraInfo();
+  }
+
+  function renderMarkers(){
+    markersG.innerHTML = "";
+    footprintsG.innerHTML = "";
+    pois.filter(p=>p.eras.includes(currentEra)).forEach(p=>{
+      const fp = document.createElementNS("http://www.w3.org/2000/svg","rect");
+      fp.setAttribute("x", p.x-14);
+      fp.setAttribute("y", p.y-12);
+      fp.setAttribute("width", 28);
+      fp.setAttribute("height", 24);
+      fp.setAttribute("fill","rgba(120,80,40,0.25)");
+      fp.setAttribute("stroke","rgba(80,50,20,0.5)");
+      fp.setAttribute("stroke-width","0.5");
+      footprintsG.appendChild(fp);
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+      g.style.cursor = "pointer";
+      g.addEventListener("click", ()=>{ resetIdle(); showPOI(p.id); });
+
+      const hit = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      hit.setAttribute("cx", p.x);
+      hit.setAttribute("cy", p.y);
+      hit.setAttribute("r", 22);
+      hit.setAttribute("fill","transparent");
+      g.appendChild(hit);
+
+      const ring = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      ring.setAttribute("cx", p.x);
+      ring.setAttribute("cy", p.y);
+      ring.setAttribute("r", 18);
+      ring.setAttribute("fill","none");
+      ring.setAttribute("stroke","#D85A30");
+      ring.setAttribute("stroke-width","1.5");
+      ring.setAttribute("opacity","0.45");
+      g.appendChild(ring);
+
+      const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      c.setAttribute("cx", p.x);
+      c.setAttribute("cy", p.y);
+      c.setAttribute("r", 13);
+      c.setAttribute("fill","#D85A30");
+      c.setAttribute("stroke","white");
+      c.setAttribute("stroke-width","2.5");
+      g.appendChild(c);
+
+      markersG.appendChild(g);
+    });
+  }
+
+  function renderPhotoMarkers(){
+    photoMarkersG.innerHTML = "";
+    photoConesG.innerHTML = "";
+    if(!photosVisible) return;
+    photos.filter(p=>p.eras.includes(currentEra)).forEach(p=>{
+      const cone = document.createElementNS("http://www.w3.org/2000/svg","path");
+      const coneRadius = 32;
+      const halfAngle = 30;
+      const a1 = (p.angle - 90 - halfAngle) * Math.PI / 180;
+      const a2 = (p.angle - 90 + halfAngle) * Math.PI / 180;
+      const x1 = p.x + Math.cos(a1) * coneRadius;
+      const y1 = p.y + Math.sin(a1) * coneRadius;
+      const x2 = p.x + Math.cos(a2) * coneRadius;
+      const y2 = p.y + Math.sin(a2) * coneRadius;
+      cone.setAttribute("d", `M ${p.x} ${p.y} L ${x1} ${y1} A ${coneRadius} ${coneRadius} 0 0 1 ${x2} ${y2} Z`);
+      cone.setAttribute("fill","#1D9E75");
+      cone.setAttribute("opacity","0.18");
+      photoConesG.appendChild(cone);
+
+      const g = document.createElementNS("http://www.w3.org/2000/svg","g");
+      g.style.cursor = "pointer";
+      g.addEventListener("click", ()=>{ resetIdle(); showPhoto(p.id); });
+
+      const hit = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      hit.setAttribute("cx", p.x);
+      hit.setAttribute("cy", p.y);
+      hit.setAttribute("r", 22);
+      hit.setAttribute("fill","transparent");
+      g.appendChild(hit);
+
+      const c = document.createElementNS("http://www.w3.org/2000/svg","circle");
+      c.setAttribute("cx", p.x);
+      c.setAttribute("cy", p.y);
+      c.setAttribute("r", 12);
+      c.setAttribute("fill","#1D9E75");
+      c.setAttribute("stroke","white");
+      c.setAttribute("stroke-width","2");
+      g.appendChild(c);
+
+      const icon = document.createElementNS("http://www.w3.org/2000/svg","g");
+      icon.setAttribute("transform", `translate(${p.x-6}, ${p.y-5})`);
+      icon.innerHTML = '<rect x="0" y="2" width="12" height="8" rx="1.5" fill="white"/><circle cx="6" cy="6" r="2.2" fill="#1D9E75"/><path d="M3 2 L4 0.5 L8 0.5 L9 2" stroke="white" stroke-width="1.2" fill="none"/>';
+      g.appendChild(icon);
+
+      photoMarkersG.appendChild(g);
+    });
+  }
+
+  function renderPOIList(){
+    poiList.innerHTML = "";
+    const visible = pois.filter(p=>p.eras.includes(currentEra));
+    if(visible.length===0){
+      poiList.innerHTML = '<p style="font-size:12px;color:var(--color-text-tertiary);font-style:italic;grid-column:span 2;">No documented POIs in this era yet.</p>';
+      return;
+    }
+    visible.forEach(p=>{
+      const item = document.createElement("button");
+      item.style.cssText = "text-align:left;padding:10px 12px;background:var(--color-background-secondary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);cursor:pointer;font-family:var(--font-sans);min-height:50px;";
+      item.innerHTML = `<div style="font-size:13px;font-weight:500;margin-bottom:2px;color:var(--color-text-primary);">${p.name}</div><div style="font-size:11px;color:var(--color-text-secondary);">${p.category}</div>`;
+      item.addEventListener("click", ()=>{ resetIdle(); showPOI(p.id); });
+      poiList.appendChild(item);
+    });
+  }
+
+  function showPOI(id){
+    const p = pois.find(x=>x.id===id);
+    if(!p) return;
+    eraInfo.style.display = "none";
+    poiDetail.style.display = "block";
+    photoDetail.style.display = "none";
+    document.getElementById("poi-era").textContent = eras[currentEra].label;
+    document.getElementById("poi-name").textContent = p.name;
+    document.getElementById("poi-address").textContent = p.address;
+    document.getElementById("poi-short").textContent = p.short;
+    document.getElementById("poi-long").textContent = p.long;
+    document.getElementById("poi-sources").textContent = p.sources;
+  }
+
+  function showPhoto(id){
+    const p = photos.find(x=>x.id===id);
+    if(!p) return;
+    eraInfo.style.display = "none";
+    poiDetail.style.display = "none";
+    photoDetail.style.display = "block";
+    const dirNames = {N:"north", S:"south", E:"east", W:"west"};
+    document.getElementById("photo-era").textContent = eras[currentEra].label;
+    document.getElementById("photo-caption-title").textContent = p.name;
+    document.getElementById("photo-meta").textContent = `${p.date} · looking ${dirNames[p.direction]}`;
+    document.getElementById("photo-caption").textContent = p.caption;
+    document.getElementById("photo-source").textContent = p.source;
+  }
+
+  function showEraInfo(){
+    eraInfo.style.display = "block";
+    poiDetail.style.display = "none";
+    photoDetail.style.display = "none";
+  }
+
+  function resetIdle(){
+    if(idleTimer) clearTimeout(idleTimer);
+    idleTimer = setTimeout(()=>{
+      setEra(0);
+    }, 90000);
+  }
+
+  backBtn.addEventListener("click", ()=>{ resetIdle(); showEraInfo(); });
+  photoBackBtn.addEventListener("click", ()=>{ resetIdle(); showEraInfo(); });
+  photoToggle.addEventListener("click", ()=>{
+    resetIdle();
+    photosVisible = !photosVisible;
+    photoToggleLabel.textContent = photosVisible ? "Photos on" : "Photos off";
+    photoToggle.style.background = photosVisible ? "var(--color-background-primary)" : "var(--color-background-secondary)";
+    renderPhotoMarkers();
+  });
+
+  setEra(0);
+  resetIdle();
+})();
+</script>
