@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2nd Street Through Time</title>
+
+  <!-- MapLibre GL JS -->
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+
+  <!-- COG protocol plugin: lets MapLibre read Cloud Optimized GeoTIFFs directly -->
+  <script src="https://unpkg.com/@geomatico/maplibre-cog-protocol@0.7.0/dist/index.js"></script>
+
+  <style>
+    :root {
+      --color-background-primary: #ffffff;
+      --color-background-secondary: #f5f5f5;
+      --color-background-tertiary: #ebebeb;
+      --color-background-info: #e8f0fe;
+      --color-text-primary: #1a1a1a;
+      --color-text-secondary: #555555;
+      --color-text-tertiary: #999999;
+      --color-text-info: #1a73e8;
+      --color-border-tertiary: #dedede;
+      --color-border-info: #a8c5f7;
+      --border-radius-lg: 12px;
+      --border-radius-md: 8px;
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      padding: 20px;
+      background: #f0f0f0;
+      font-family: var(--font-sans);
+      display: flex;
+      justify-content: center;
+    }
+    .maplibregl-popup-content {
+      padding: 12px 14px;
+      border-radius: 8px;
+      font-family: var(--font-sans);
+      max-width: 240px;
+    }
+    .popup-label {
+      font-size: 10px;
+      color: var(--color-text-tertiary);
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin: 0 0 4px 0;
+    }
+    .popup-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--color-text-primary);
+      margin: 0 0 4px 0;
+      line-height: 1.3;
+    }
+    .popup-address {
+      font-size: 12px;
+      color: var(--color-text-secondary);
+      margin: 0 0 8px 0;
+    }
+    .popup-use {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 10px;
+      font-weight: 500;
+    }
+    .popup-notes {
+      font-size: 11px;
+      color: var(--color-text-secondary);
+      margin: 8px 0 0 0;
+      font-style: italic;
+    }
+  </style>
+</head>
+<body>
+
+<div id="kiosk-root" style="width:100%;max-width:480px;margin:0 auto;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-lg);overflow:hidden;">
+
+  <div style="padding:14px 16px;border-bottom:0.5px solid var(--color-border-tertiary);display:flex;justify-content:space-between;align-items:flex-end;">
+    <div>
+      <h2 style="font-size:18px;font-weight:500;margin:0 0 2px 0;">2nd Street through time</h2>
+      <p style="font-size:12px;color:var(--color-text-secondary);margin:0;">Jackson Ward, Richmond</p>
+    </div>
+    <span style="font-size:10px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;">prototype</span>
+  </div>
+
+  <div id="map-canvas" style="position:relative;width:100%;height:480px;background:var(--color-background-tertiary);">
+    <div id="map" style="position:absolute;top:0;left:0;width:100%;height:100%;"></div>
+
+    <div style="position:absolute;top:10px;left:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:6px 10px;font-size:12px;z-index:2;">
+      <span style="color:var(--color-text-secondary);">Era:</span>
+      <span style="font-weight:500;margin-left:4px;">1925 – 1950</span>
+    </div>
+
+    <!-- Legend -->
+    <div id="legend" style="position:absolute;bottom:10px;left:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:8px 10px;font-size:11px;z-index:2;line-height:1.5;">
+      <p style="font-size:9px;color:var(--color-text-tertiary);text-transform:uppercase;letter-spacing:0.06em;margin:0 0 4px 0;font-weight:500;">Parcel use, 1952</p>
+      <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:12px;height:12px;background:#D85A30;border-radius:2px;"></span>Commercial</div>
+      <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:12px;height:12px;background:#4A7A9B;border-radius:2px;"></span>Residential</div>
+      <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:12px;height:12px;background:#8B6F9A;border-radius:2px;"></span>Mixed use</div>
+      <div style="display:flex;align-items:center;gap:6px;"><span style="display:inline-block;width:12px;height:12px;background:#B0B0B0;border-radius:2px;"></span>Vacant</div>
+    </div>
+
+    <!-- Basemap toggle -->
+    <div id="basemap-toggle" style="position:absolute;top:10px;right:10px;background:var(--color-background-primary);border:0.5px solid var(--color-border-tertiary);border-radius:var(--border-radius-md);padding:0;font-size:11px;z-index:2;overflow:hidden;display:flex;">
+      <button data-mode="modern" class="basemap-btn active" style="border:0;background:var(--color-background-info);color:var(--color-text-info);padding:8px 12px;cursor:pointer;font-family:var(--font-sans);font-size:11px;font-weight:500;">Modern</button>
+      <button data-mode="historical" class="basemap-btn" style="border:0;background:transparent;color:var(--color-text-secondary);padding:8px 12px;cursor:pointer;font-family:var(--font-sans);font-size:11px;border-left:0.5px solid var(--color-border-tertiary);">Sanborn 1952</button>
+    </div>
+  </div>
+
+  <div style="padding:14px 16px;background:var(--color-background-secondary);border-top:0.5px solid var(--color-border-tertiary);">
+    <p style="font-size:11px;color:var(--color-text-secondary);margin:0;line-height:1.5;">
+      <strong style="color:var(--color-text-primary);">243 digitized parcels</strong> from the 1952 Sanborn maps, classified by land use. Tap a parcel for details. Toggle between modern and historical basemap above.
+    </p>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ============================================================
+  // Config — change these as data sources come online
+  // ============================================================
+
+  // The clipped, JPEG-compressed Sanborn 1952 COG.
+  // Set to null to fall back to the tan-tint placeholder.
+  const SANBORN_COG_URL = './Mosaic1952_clippedJPEG.tif';
+
+  // The parcels GeoJSON — drop into the same folder as this HTML.
+  const PARCELS_URL = './parcels_1952.geojson';
+
+  // Center on Jackson Ward (computed from the parcels bounding box)
+  const CENTER = [-77.4352, 37.5489];
+  const ZOOM_INITIAL = 16.5;
+  const ZOOM_MAX = 20;
+
+  // Rotate the map so 2nd Street runs roughly vertical for the kiosk visitor.
+  // Negative bearing rotates the map clockwise from north-up.
+  const INITIAL_BEARING = -37;
+
+  // Use-class colors. Note: original data has "Residental" (misspelled)
+  // — we handle that as a known typo rather than requiring re-export.
+  function useClassColor(identifica) {
+    if (!identifica) return '#B0B0B0';
+    const v = identifica.trim().toLowerCase();
+    if (v === 'commercial') return '#D85A30';
+    if (v === 'residental' || v === 'residential') return '#4A7A9B';
+    if (v === 'mixed use') return '#8B6F9A';
+    if (v === 'vacant') return '#B0B0B0';
+    return '#888888';
+  }
+
+  function useClassLabel(identifica) {
+    if (!identifica) return 'Unknown';
+    const v = identifica.trim().toLowerCase();
+    if (v === 'residental') return 'Residential';
+    return identifica.trim();
+  }
+
+  // ============================================================
+  // Map initialization
+  // ============================================================
+
+  // Register the COG protocol so MapLibre can read 'cog://' URLs
+  maplibregl.addProtocol('cog', MaplibreCOGProtocol.cogProtocol);
+
+  const map = new maplibregl.Map({
+    container: 'map',
+    style: {
+      version: 8,
+      sources: {
+        'osm-modern': {
+          type: 'raster',
+          tiles: [
+            'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://b.tile.openstreetmap.org/{z}/{x}/{y}.png',
+            'https://c.tile.openstreetmap.org/{z}/{x}/{y}.png'
+          ],
+          tileSize: 256,
+          attribution: '© OpenStreetMap contributors',
+          maxzoom: 19
+        }
+      },
+      layers: [
+        {
+          id: 'osm-modern-layer',
+          type: 'raster',
+          source: 'osm-modern',
+          paint: { 'raster-opacity': 1.0 }
+        }
+      ]
+    },
+    center: CENTER,
+    zoom: ZOOM_INITIAL,
+    maxZoom: ZOOM_MAX,
+    minZoom: 14,
+    bearing: INITIAL_BEARING,
+    // Kiosk hygiene: keep visitors from accidentally rotating the map
+    dragRotate: false,
+    touchZoomRotate: false,
+    pitchWithRotate: false
+  });
+
+  map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'bottom-right');
+
+  // ============================================================
+  // Once the map is ready, layer in the parcels and (optionally) Sanborn
+  // ============================================================
+
+  map.on('load', () => {
+
+    // Historical Sanborn basemap from the COG plugin.
+    // If SANBORN_COG_URL is null, we fall back to a tan tint as a visual stand-in.
+    if (SANBORN_COG_URL) {
+      map.addSource('sanborn-1952', {
+        type: 'raster',
+        url: 'cog://' + SANBORN_COG_URL,
+        tileSize: 256
+      });
+
+      map.addLayer({
+        id: 'sanborn-1952-layer',
+        type: 'raster',
+        source: 'sanborn-1952',
+        paint: {
+          'raster-opacity': 0,  // starts hidden; toggle reveals it
+          'raster-fade-duration': 300
+        }
+      });
+    } else {
+      // Fallback tan tint when no COG is configured
+      map.addSource('historical-tint', {
+        type: 'geojson',
+        data: {
+          type: 'Feature',
+          geometry: {
+            type: 'Polygon',
+            coordinates: [[
+              [-77.45, 37.54], [-77.42, 37.54],
+              [-77.42, 37.56], [-77.45, 37.56], [-77.45, 37.54]
+            ]]
+          },
+          properties: {}
+        }
+      });
+      map.addLayer({
+        id: 'historical-tint-layer',
+        type: 'fill',
+        source: 'historical-tint',
+        paint: {
+          'fill-color': '#d4c39a',
+          'fill-opacity': 0
+        }
+      });
+    }
+
+    // Parcels source + layers
+    map.addSource('parcels', {
+      type: 'geojson',
+      data: PARCELS_URL
+    });
+
+    // Fill
+    map.addLayer({
+      id: 'parcels-fill',
+      type: 'fill',
+      source: 'parcels',
+      paint: {
+        'fill-color': [
+          'match',
+          ['downcase', ['coalesce', ['get', 'Identifica'], '']],
+          'commercial',  '#D85A30',
+          'residental',  '#4A7A9B',
+          'residential', '#4A7A9B',
+          'mixed use',   '#8B6F9A',
+          'vacant',      '#B0B0B0',
+          '#888888'
+        ],
+        'fill-opacity': 0.55
+      }
+    });
+
+    // Outline
+    map.addLayer({
+      id: 'parcels-line',
+      type: 'line',
+      source: 'parcels',
+      paint: {
+        'line-color': '#2A2A2A',
+        'line-width': 0.6,
+        'line-opacity': 0.6
+      }
+    });
+
+    // Hover highlight
+    map.addLayer({
+      id: 'parcels-hover',
+      type: 'line',
+      source: 'parcels',
+      paint: {
+        'line-color': '#1a73e8',
+        'line-width': 2
+      },
+      filter: ['==', 'FID', -1]
+    });
+
+    map.on('mousemove', 'parcels-fill', (e) => {
+      if (e.features.length > 0) {
+        map.getCanvas().style.cursor = 'pointer';
+        map.setFilter('parcels-hover', ['==', 'FID', e.features[0].properties.FID]);
+      }
+    });
+    map.on('mouseleave', 'parcels-fill', () => {
+      map.getCanvas().style.cursor = '';
+      map.setFilter('parcels-hover', ['==', 'FID', -1]);
+    });
+
+    // Click-to-popup
+    map.on('click', 'parcels-fill', (e) => {
+      if (!e.features || !e.features.length) return;
+      const p = e.features[0].properties;
+
+      const useClass = useClassLabel(p.Identifica);
+      const useColor = useClassColor(p.Identifica);
+      const business = (p.Business_T || '').trim();
+      const name = (p.Name || '').trim();
+      const notes = (p.Notes || '').trim();
+      const address = (p.Address || '').trim();
+
+      let displayName = business;
+      if (!displayName && name && name !== 'Vacant') displayName = name;
+      if (!displayName) displayName = useClass;
+
+      let html = '';
+      html += `<p class="popup-label">${address || 'Address unknown'}</p>`;
+      html += `<p class="popup-name">${escapeHtml(displayName)}</p>`;
+      html += `<span class="popup-use" style="background:${useColor}22;color:${useColor};">${useClass}</span>`;
+      if (notes && notes !== ' ') {
+        html += `<p class="popup-notes">${escapeHtml(notes)}</p>`;
+      }
+
+      new maplibregl.Popup({ closeButton: true, maxWidth: '260px' })
+        .setLngLat(e.lngLat)
+        .setHTML(html)
+        .addTo(map);
+    });
+  });
+
+  // ============================================================
+  // Basemap toggle (Modern OSM vs Historical Sanborn tint)
+  // ============================================================
+  document.querySelectorAll('.basemap-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const mode = btn.dataset.mode;
+
+      document.querySelectorAll('.basemap-btn').forEach(b => {
+        if (b === btn) {
+          b.style.background = 'var(--color-background-info)';
+          b.style.color = 'var(--color-text-info)';
+          b.style.fontWeight = '500';
+        } else {
+          b.style.background = 'transparent';
+          b.style.color = 'var(--color-text-secondary)';
+          b.style.fontWeight = '400';
+        }
+      });
+
+      if (mode === 'modern') {
+        map.setPaintProperty('osm-modern-layer', 'raster-opacity', 1.0);
+        if (SANBORN_COG_URL && map.getLayer('sanborn-1952-layer')) {
+          map.setPaintProperty('sanborn-1952-layer', 'raster-opacity', 0);
+        } else if (map.getLayer('historical-tint-layer')) {
+          map.setPaintProperty('historical-tint-layer', 'fill-opacity', 0);
+        }
+      } else {
+        // Historical mode: dim modern OSM, show Sanborn (or tint fallback)
+        map.setPaintProperty('osm-modern-layer', 'raster-opacity', 0.15);
+        if (SANBORN_COG_URL && map.getLayer('sanborn-1952-layer')) {
+          map.setPaintProperty('sanborn-1952-layer', 'raster-opacity', 1.0);
+        } else if (map.getLayer('historical-tint-layer')) {
+          map.setPaintProperty('historical-tint-layer', 'fill-opacity', 0.5);
+        }
+      }
+    });
+  });
+
+  function escapeHtml(s) {
+    return String(s).replace(/[&<>"']/g, c => (
+      { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[c]
+    ));
+  }
+})();
+</script>
+
+</body>
+</html>
